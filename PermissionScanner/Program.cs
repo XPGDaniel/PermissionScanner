@@ -17,7 +17,9 @@ namespace PermissionScanner
             string checksumfile = new FileInfo(System.Reflection.Assembly.GetEntryAssembly().Location).Directory.FullName;
             string output = checksumfile + "\\Deletable_" + DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + ".txt";
             List<string> locations = new List<string>();// ConfigurationManager.AppSettings.AllKeys.ToList();
-            ShareCollection shi = ShareCollection.LocalShares;
+            List<string> excludes = ConfigurationManager.AppSettings["Exclude"].Split(';').ToList();
+            excludes.RemoveAll(item => string.IsNullOrEmpty(item));
+            ShareCollection shi = ShareCollection.GetShares(ConfigurationManager.AppSettings["NAS"]); // LocalShares;
             if (shi != null)
             {
                 foreach (Share si in shi)
@@ -25,7 +27,7 @@ namespace PermissionScanner
                     Console.WriteLine("{0}: {1} [{2}]",
                         si.ShareType, si, si.Path);
                     if (si.ShareType == ShareType.Disk)
-                        locations.Add(si.Path);
+                        locations.Add(si.ToString().Replace(@"\\", @"\"));
                     // If this is a file-system share, try to
                     // list the first five subfolders.
                     // NB: If the share is on a removable device,
@@ -53,13 +55,19 @@ namespace PermissionScanner
             else
                 Console.WriteLine("Unable to enumerate the local shares.");
 
+
+            //locations.Add(@"\\Diskstation\photo\");
+
             int deletable = 0;
             List<string> FileList = null;
             using (StreamWriter file = File.CreateText(output))
             { }
             foreach (var loc in locations)
             {
+                Console.WriteLine("Scanning " + loc);
                 FileList = GetFiles(loc, "*.*");
+                if (FileList != null) if (FileList.Count != 0)
+                        Console.WriteLine(FileList.Count + " files could be deleted by current user account");
                 if (FileList.Any())
                 {
                     using (StreamWriter file = File.AppendText(output))

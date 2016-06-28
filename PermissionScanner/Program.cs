@@ -19,7 +19,23 @@ namespace PermissionScanner
             List<string> locations = new List<string>();// ConfigurationManager.AppSettings.AllKeys.ToList();
             List<string> excludes = ConfigurationManager.AppSettings["Exclude"].Split(';').ToList();
             excludes.RemoveAll(item => string.IsNullOrEmpty(item));
-            ShareCollection shi = ShareCollection.GetShares(ConfigurationManager.AppSettings["NAS"]); // LocalShares;
+            ShareCollection shi;
+            switch (Convert.ToBoolean(string.IsNullOrEmpty(ConfigurationManager.AppSettings["GetLocal"]) ? "false" : ConfigurationManager.AppSettings["GetLocal"]))
+            {
+                case true:
+                    shi = ShareCollection.LocalShares;
+                    break;
+                case false:
+                default:
+                    if (!string.IsNullOrEmpty(ConfigurationManager.AppSettings["NAS"]))
+                        shi = ShareCollection.GetShares(ConfigurationManager.AppSettings["NAS"]);
+                    else
+                    {
+                        Console.WriteLine("Invalid setting found in app.config, program terminated.");
+                        return;
+                    }
+                    break;
+            }
             if (shi != null)
             {
                 foreach (Share si in shi)
